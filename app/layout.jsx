@@ -1,4 +1,5 @@
-import './globals.css';
+import "./globals.css";
+
 export const metadata = {
   title: "Rental Property Outcome Calculator",
   description: "Compare rental property purchase vs. market investment.",
