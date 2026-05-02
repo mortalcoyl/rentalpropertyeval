@@ -1,6 +1,6 @@
 # Rental Property Outcome Calculator
 
-Vercel-ready Next.js app.
+Vercel-ready Next.js app for the rental property vs. market investment calculator.
 
 ## Local setup
 
@@ -19,4 +19,6 @@ npm run build
 
 ## Deploy to Vercel
 
-Push this folder to GitHub, then import the repo in Vercel. Make sure Vercel's Root Directory is the folder containing this package.json.
+Push this folder to GitHub, then import the repo in Vercel.
+
+Make sure Vercel's Root Directory is the folder containing this `package.json`.

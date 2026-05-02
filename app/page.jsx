@@ -77,17 +77,7 @@ function Button({ children, className = "", variant = "default", ...props }) {
 
 function ResetIcon({ className = "" }) {
   return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-    >
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
       <path d="M3 12a9 9 0 1 0 3-6.7" />
       <path d="M3 4v6h6" />
     </svg>
@@ -96,17 +86,7 @@ function ResetIcon({ className = "" }) {
 
 function BreakEvenIcon({ className = "" }) {
   return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-    >
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
       <path d="M12 3v18" />
       <path d="M5 7h14" />
       <path d="M6 7l-3 6h6l-3-6z" />
@@ -311,11 +291,7 @@ function buildRentalModel(inputs) {
         const extraPrincipal = Math.min(afterTaxCashFlow, actualLoanBalance);
         actualLoanBalance -= extraPrincipal;
         payoffContribution += extraPrincipal;
-
-        if (payoffYear === null && actualLoanBalance <= 0) {
-          payoffYear = year;
-        }
-
+        if (payoffYear === null && actualLoanBalance <= 0) payoffYear = year;
         const surplusAfterPayoff = afterTaxCashFlow - extraPrincipal;
         reinvestedPositiveCashFlow += surplusAfterPayoff;
       } else {
@@ -390,47 +366,674 @@ function buildRentalModel(inputs) {
   const dscr = annualDebtService > 0 ? firstYear.NOI / annualDebtService : 0;
   const totalProfit = final.InvestorValue - initialCash;
   const equityMultiple = initialCash > 0 ? final.InvestorValue / initialCash : 0;
-  const annualizedReturn =
-    initialCash > 0 && final.InvestorValue > 0
-      ? (Math.pow(final.InvestorValue / initialCash, 1 / Math.max(1, horizonYears)) - 1) * 100
-      : 0;
+  const annualizedReturn = initialCash > 0 && final.InvestorValue > 0 ? (Math.pow(final.InvestorValue / initialCash, 1 / Math.max(1, horizonYears)) - 1) * 100 : 0;
   const alternateInvestmentGain = final.DownPaymentInvestment - downPayment - cumulativeCoveredLosses;
   const rentalVsInvestmentDifference = final.InvestorValue - final.DownPaymentInvestment;
   const strategyLabel = cashFlowStrategy === "paydown" ? "Pay off contribution" : "Reinvested surplus cash flow";
 
   return {
-    chart,
-    final,
-    downPayment,
-    loan,
-    closingCosts,
-    initialCash,
-    mortgage,
-    annualDebtService,
-    firstYearGrossRent,
-    firstYearEffectiveRent,
-    firstYearVacancyLossMonthly,
-    firstYearEffectiveRentMonthly,
-    firstYearOperatingExpensesMonthly,
-    firstYearPropertyTaxMonthly,
-    firstYearInsuranceMonthly,
-    firstYearMaintenanceMonthly,
-    firstYearManagementMonthly,
-    firstYearCapexMonthly,
-    firstYearOtherMonthly,
-    firstYearMonthlyProfitLossBeforeTax,
-    firstYearBreakEvenMonthlyRent,
-    firstYearCapRate,
-    firstYearCashOnCash,
-    dscr,
-    totalProfit,
-    equityMultiple,
-    annualizedReturn,
-    alternateInvestmentGain,
-    rentalVsInvestmentDifference,
-    coveredLossInvestmentValue: final.CoveredLossInvestment,
-    cumulativeCoveredLosses,
-    strategyLabel,
-    payoffYear,
+    chart, final, downPayment, loan, closingCosts, initialCash, mortgage, annualDebtService,
+    firstYearGrossRent, firstYearEffectiveRent, firstYearVacancyLossMonthly, firstYearEffectiveRentMonthly,
+    firstYearOperatingExpensesMonthly, firstYearPropertyTaxMonthly, firstYearInsuranceMonthly,
+    firstYearMaintenanceMonthly, firstYearManagementMonthly, firstYearCapexMonthly, firstYearOtherMonthly,
+    firstYearMonthlyProfitLossBeforeTax, firstYearBreakEvenMonthlyRent, firstYearCapRate, firstYearCashOnCash,
+    dscr, totalProfit, equityMultiple, annualizedReturn, alternateInvestmentGain, rentalVsInvestmentDifference,
+    coveredLossInvestmentValue: final.CoveredLossInvestment, cumulativeCoveredLosses, strategyLabel, payoffYear,
   };
+}
+
+function buildScenarioAnalysis(inputs) {
+  const scenarioDefinitions = [
+    {
+      name: "Base case",
+      description: "Uses the current assumptions from the calculator.",
+      inputs,
+      adjustments: [{ assumption: "All assumptions", change: "No changes" }],
+    },
+    {
+      name: "Conservative case",
+      description: "Lower rent/appreciation, higher vacancy, and higher expenses.",
+      adjustments: [
+        { assumption: "Rent growth", change: "-1.5pp" },
+        { assumption: "Property appreciation", change: "-2pp" },
+        { assumption: "Vacancy", change: "+5pp" },
+        { assumption: "Maintenance", change: "+0.5pp" },
+        { assumption: "Capex reserve", change: "+$150/mo" },
+        { assumption: "Expense inflation", change: "+1pp" },
+        { assumption: "Selling cost", change: "+1pp" },
+        { assumption: "Alt return", change: "-1pp" },
+      ],
+      inputs: {
+        ...inputs,
+        rentGrowth: Math.max(0, inputs.rentGrowth - 1.5),
+        propertyAppreciation: inputs.propertyAppreciation - 2,
+        vacancyPct: Math.min(30, inputs.vacancyPct + 5),
+        maintenancePct: Math.min(6, inputs.maintenancePct + 0.5),
+        capexMonthly: inputs.capexMonthly + 150,
+        expenseInflation: inputs.expenseInflation + 1,
+        sellingCostPct: Math.min(12, inputs.sellingCostPct + 1),
+        alternateInvestmentReturn: Math.max(0, inputs.alternateInvestmentReturn - 1),
+      },
+    },
+    {
+      name: "Aggressive case",
+      description: "Higher rent/appreciation, lower vacancy, and lower expense pressure.",
+      adjustments: [
+        { assumption: "Rent growth", change: "+1.5pp" },
+        { assumption: "Property appreciation", change: "+2pp" },
+        { assumption: "Vacancy", change: "-3pp" },
+        { assumption: "Maintenance", change: "-0.25pp" },
+        { assumption: "Capex reserve", change: "-$100/mo" },
+        { assumption: "Expense inflation", change: "-0.75pp" },
+        { assumption: "Selling cost", change: "-0.5pp" },
+        { assumption: "Alt return", change: "+1pp" },
+      ],
+      inputs: {
+        ...inputs,
+        rentGrowth: inputs.rentGrowth + 1.5,
+        propertyAppreciation: inputs.propertyAppreciation + 2,
+        vacancyPct: Math.max(0, inputs.vacancyPct - 3),
+        maintenancePct: Math.max(0, inputs.maintenancePct - 0.25),
+        capexMonthly: Math.max(0, inputs.capexMonthly - 100),
+        expenseInflation: Math.max(0, inputs.expenseInflation - 0.75),
+        sellingCostPct: Math.max(0, inputs.sellingCostPct - 0.5),
+        alternateInvestmentReturn: inputs.alternateInvestmentReturn + 1,
+      },
+    },
+  ];
+
+  const scenarios = scenarioDefinitions.map((scenario) => {
+    const model = buildRentalModel(scenario.inputs);
+    return {
+      ...scenario,
+      rentalProfit: model.totalProfit,
+      altProfit: model.alternateInvestmentGain,
+      decisionSpread: model.totalProfit - model.alternateInvestmentGain,
+      winner: model.totalProfit >= model.alternateInvestmentGain ? "Rental property" : "Alt investment",
+      annualizedReturn: model.annualizedReturn,
+    };
+  });
+
+  const baseSpread = scenarios[0].decisionSpread;
+  const sensitivityInputs = [
+    { label: "Property appreciation", key: "propertyAppreciation", delta: 1, suffix: "pp" },
+    { label: "Rent growth", key: "rentGrowth", delta: 1, suffix: "pp" },
+    { label: "Vacancy", key: "vacancyPct", delta: 2, suffix: "pp" },
+    { label: "Mortgage rate", key: "mortgageRate", delta: 0.5, suffix: "pp" },
+    { label: "Alt investment return", key: "alternateInvestmentReturn", delta: 1, suffix: "pp" },
+    { label: "Maintenance", key: "maintenancePct", delta: 0.5, suffix: "pp" },
+    { label: "Capex reserve", key: "capexMonthly", delta: 100, suffix: "/mo" },
+  ];
+
+  const sensitivities = sensitivityInputs
+    .map((item) => {
+      const adjustedInputs = { ...inputs, [item.key]: Math.max(0, inputs[item.key] + item.delta) };
+      const adjustedModel = buildRentalModel(adjustedInputs);
+      const adjustedSpread = adjustedModel.totalProfit - adjustedModel.alternateInvestmentGain;
+      return { ...item, impact: adjustedSpread - baseSpread, adjustedSpread };
+    })
+    .sort((a, b) => Math.abs(b.impact) - Math.abs(a.impact));
+
+  return { scenarios, sensitivities };
+}
+
+function runModelSelfTests() {
+  console.assert(MARKET_RETURN_PRESETS.length === 3, "Market return presets should include DOW, S&P 500, and Nasdaq.");
+  console.assert(MARKET_RETURN_PRESETS.every((preset) => Number.isFinite(preset.value) && preset.value > 0), "Market return presets should have positive numeric return values.");
+
+  const reinvestModel = buildRentalModel({ ...DEFAULTS, cashFlowStrategy: "reinvest" });
+  console.assert(reinvestModel.chart.length === DEFAULTS.horizonYears + 1, "Expected one row for year 0 plus each horizon year.");
+  console.assert(reinvestModel.chart[0].DownPaymentInvestment === Math.round(DEFAULTS.purchasePrice * (DEFAULTS.downPaymentPct / 100)), "Year 0 alternate investment should equal down payment.");
+  console.assert(reinvestModel.alternateInvestmentGain > 0, "Default alternate investment total profit should be positive.");
+
+  const paydownModel = buildRentalModel({ ...DEFAULTS, cashFlowStrategy: "paydown", monthlyRent: 30000, taxRate: 0, horizonYears: 30 });
+  console.assert(paydownModel.payoffYear !== null, "High-rent paydown scenario should pay off the loan within the horizon.");
+  console.assert(paydownModel.final.LoanBalance === 0, "Loan balance should be zero after payoff.");
+  console.assert(paydownModel.chart.some((point) => point.LoanPaidOffMarker !== null), "Paydown scenario should include one diamond marker when the loan is paid off.");
+
+  const coveredLossModel = buildRentalModel({ ...DEFAULTS, includeCoveredLossesInAlt: true, monthlyRent: 0, horizonYears: 5 });
+  console.assert(coveredLossModel.final.CoveredLossInvestment > 0, "Covered losses toggle should create a covered-loss investment value when rental cash flow is negative.");
+  console.assert(coveredLossModel.final.DownPaymentInvestment > coveredLossModel.final.CoveredLossInvestment, "Alt investment value should include down payment investment plus covered-loss investments.");
+
+  const zeroRentModel = buildRentalModel({ ...DEFAULTS, monthlyRent: 0, horizonYears: 5 });
+  console.assert(zeroRentModel.firstYearGrossRent === 0, "Monthly rent slider must support a $0 rent scenario.");
+  console.assert(zeroRentModel.firstYearEffectiveRentMonthly === 0, "Monthly revenue should be $0 when rent is $0.");
+
+  const noVacancyModel = buildRentalModel({ ...DEFAULTS, vacancyPct: 0, horizonYears: 5 });
+  console.assert(noVacancyModel.firstYearEffectiveRentMonthly === DEFAULTS.monthlyRent, "Monthly effective rent should equal monthly rent when vacancy is 0%.");
+  const expenseComponentTotal = noVacancyModel.firstYearPropertyTaxMonthly + noVacancyModel.firstYearInsuranceMonthly + noVacancyModel.firstYearMaintenanceMonthly + noVacancyModel.firstYearManagementMonthly + noVacancyModel.firstYearCapexMonthly + noVacancyModel.firstYearOtherMonthly;
+  console.assert(Math.abs(expenseComponentTotal - noVacancyModel.firstYearOperatingExpensesMonthly) < 1, "Monthly operating expense components should approximately equal total monthly operating expenses.");
+
+  const breakEvenRent = calculateBreakEvenMonthlyRent(DEFAULTS);
+  const breakEvenModel = buildRentalModel({ ...DEFAULTS, monthlyRent: breakEvenRent });
+  console.assert(reinvestModel.firstYearBreakEvenMonthlyRent === breakEvenRent, "Model break-even monthly rent should match the break-even helper calculation.");
+  console.assert(Math.abs(breakEvenModel.firstYearMonthlyProfitLossBeforeTax) <= 1, "Break-even rent should make first-year monthly P/L approximately zero before tax.");
+
+  const resetIconElement = ResetIcon({ className: "test-class" });
+  console.assert(resetIconElement.type === "svg", "ResetIcon should render an inline SVG so it does not require an external icon package.");
+
+  const breakEvenIconElement = BreakEvenIcon({ className: "test-class" });
+  console.assert(breakEvenIconElement.type === "svg", "BreakEvenIcon should render an inline SVG so it does not require an external icon package.");
+
+  const scenarioAnalysis = buildScenarioAnalysis(DEFAULTS);
+  console.assert(scenarioAnalysis.scenarios.length === 3, "Scenario analysis should include base, conservative, and aggressive cases.");
+  console.assert(scenarioAnalysis.scenarios.every((scenario) => scenario.adjustments.length > 0), "Each scenario should explain its adjustments from base.");
+  console.assert(scenarioAnalysis.scenarios.every((scenario) => scenario.adjustments.every((adjustment) => adjustment.assumption && adjustment.change)), "Scenario adjustments should be structured as table rows.");
+  console.assert(scenarioAnalysis.sensitivities.length >= 5, "Sensitivity analysis should include multiple assumption drivers.");
+}
+
+if (typeof window !== "undefined") {
+  runModelSelfTests();
+}
+
+function Slider({ label, value, setValue, min, max, step, suffix = "", prefix = "", helper }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between gap-4">
+        <div>
+          <div className="text-sm font-medium text-zinc-900">{label}</div>
+          {helper ? <div className="text-xs text-zinc-500">{helper}</div> : null}
+        </div>
+        <div className="text-sm font-semibold tabular-nums text-zinc-900">
+          {prefix}{typeof value === "number" ? value.toLocaleString() : value}{suffix}
+        </div>
+      </div>
+      <input className="w-full accent-zinc-900" type="range" value={value} min={min} max={max} step={step} onChange={(event) => setValue(Number(event.target.value))} />
+    </div>
+  );
+}
+
+function StatRow({ label, value, strong = false }) {
+  return (
+    <div className="flex justify-between gap-4">
+      <span>{label}</span>
+      <span className={`${strong ? "font-semibold text-zinc-900" : "font-medium"} tabular-nums`}>{value}</span>
+    </div>
+  );
+}
+
+function CollapsibleSection({ title, description, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="text-sm font-medium text-zinc-900">{title}</div>
+          {description ? <div className="text-xs text-zinc-500">{description}</div> : null}
+        </div>
+        <Button type="button" variant="outline" onClick={() => setOpen(!open)}>{open ? "Hide" : "Show"}</Button>
+      </div>
+      {open ? <div className="mt-4 space-y-5">{children}</div> : null}
+    </div>
+  );
+}
+
+function LoanPaidOffDot(props) {
+  const { cx, cy } = props;
+  if (typeof cx !== "number" || typeof cy !== "number") return null;
+  return <path d={`M ${cx} ${cy - 6} L ${cx + 6} ${cy} L ${cx} ${cy + 6} L ${cx - 6} ${cy} Z`} fill="#18181b" stroke="#ffffff" strokeWidth={2} />;
+}
+
+function StrategyToggle({ value, setValue }) {
+  const options = [
+    { value: "reinvest", label: "Reinvest cash flow" },
+    { value: "paydown", label: "Pay off contribution" },
+  ];
+
+  return (
+    <div className="rounded-2xl bg-zinc-100 p-1">
+      <div className="grid grid-cols-2 gap-1">
+        {options.map((option) => (
+          <button key={option.value} type="button" onClick={() => setValue(option.value)} className={`rounded-xl px-3 py-2 text-sm font-medium transition ${value === option.value ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-600 hover:bg-white/60 hover:text-zinc-950"}`}>
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChartLegend({ items }) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-zinc-600">
+      {items.map((item) => (
+        <div key={item.label} className="flex items-center gap-2">
+          <span className="inline-block h-0 w-8 border-t-[3px]" style={{ borderColor: item.color, borderStyle: item.dashed ? "dashed" : "solid" }} />
+          <span>{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AdvancedDecisionAnalysis({ inputs }) {
+  const analysis = useMemo(() => buildScenarioAnalysis(inputs), [inputs]);
+
+  return (
+    <CollapsibleSection title="Advanced decision analysis" description="Compare base, conservative, and aggressive cases without changing the main chart." defaultOpen={false}>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {analysis.scenarios.map((scenario) => (
+          <div key={scenario.name} className="rounded-2xl bg-white p-4 text-sm shadow-sm ring-1 ring-zinc-200">
+            <div className="font-medium text-zinc-900">{scenario.name}</div>
+            <p className="mt-1 text-xs leading-5 text-zinc-500">{scenario.description}</p>
+            <div className="mt-4 space-y-2 text-zinc-700">
+              <StatRow label="Winner" value={scenario.winner} strong />
+              <StatRow label="Rental profit" value={currency(scenario.rentalProfit)} />
+              <StatRow label="Alt profit" value={currency(scenario.altProfit)} />
+              <StatRow label="Rental vs. alt" value={currency(scenario.decisionSpread)} strong />
+              <StatRow label="Rental annualized" value={percent(scenario.annualizedReturn)} />
+            </div>
+            <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-zinc-50 text-[10px] uppercase tracking-wide text-zinc-500">
+                  <tr><th className="px-3 py-2 font-medium">Assumption</th><th className="px-3 py-2 text-right font-medium">Adjustment</th></tr>
+                </thead>
+                <tbody>
+                  {scenario.adjustments.map((adjustment) => (
+                    <tr key={`${scenario.name}-${adjustment.assumption}`} className="border-t border-zinc-100">
+                      <td className="px-3 py-2 text-zinc-700">{adjustment.assumption}</td>
+                      <td className="px-3 py-2 text-right font-medium tabular-nums text-zinc-900">{adjustment.change}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-2xl bg-white p-4 text-sm shadow-sm ring-1 ring-zinc-200">
+        <div className="font-medium text-zinc-900">Which assumption drives the decision most?</div>
+        <p className="mt-1 text-xs leading-5 text-zinc-500">Shows how much the rental-vs-alt-investment spread changes when each assumption is increased by the listed amount.</p>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[620px] text-left text-sm">
+            <thead className="text-xs uppercase tracking-wide text-zinc-500">
+              <tr className="border-b border-zinc-200">
+                <th className="py-2 pr-4 font-medium">Assumption</th>
+                <th className="py-2 pr-4 font-medium">Test change</th>
+                <th className="py-2 pr-4 text-right font-medium">Impact on decision</th>
+                <th className="py-2 text-right font-medium">New rental vs. alt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {analysis.sensitivities.map((item) => (
+                <tr key={item.label} className="border-b border-zinc-100 last:border-0">
+                  <td className="py-2 pr-4 text-zinc-900">{item.label}</td>
+                  <td className="py-2 pr-4 text-zinc-600">+{item.delta}{item.suffix}</td>
+                  <td className="py-2 pr-4 text-right tabular-nums text-zinc-900">{currency(item.impact)}</td>
+                  <td className="py-2 text-right tabular-nums text-zinc-900">{currency(item.adjustedSpread)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </CollapsibleSection>
+  );
+}
+
+function MainChart({ model, cashFlowStrategy, includeCoveredLossesInAlt }) {
+  const [showSecondaryLines, setShowSecondaryLines] = useState(false);
+  const legendItems = [
+    { label: "Rental Investment Value", color: "#2563eb" },
+    { label: "Alt Investment Value", color: "#16a34a" },
+    { label: "Property Value", color: "#a855f7", dashed: true },
+    ...(showSecondaryLines
+      ? [
+          ...(includeCoveredLossesInAlt ? [{ label: "Covered Losses Invested", color: "#06b6d4" }] : []),
+          { label: "Equity after sale", color: "#a1a1aa" },
+          { label: model.strategyLabel, color: "#ea580c" },
+        ]
+      : []),
+  ];
+
+  return (
+    <Card className="h-full">
+      <CardContent className="flex h-full flex-col p-4">
+        <div className="mb-2 shrink-0">
+          <h2 className="text-xl font-semibold">Estimated rental property value over time</h2>
+          <p className="text-sm text-zinc-500">Tracks investor value, property value, equity after sale, the selected cash-flow strategy, and a down-payment investment alternative.</p>
+        </div>
+        <div className="h-[360px] flex-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={model.chart} margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="year" tickFormatter={(value) => `${value}y`} tick={{ fontSize: 14 }} />
+              <YAxis tickFormatter={(value) => chartCurrency(value)} width={60} tick={{ fontSize: 14 }} />
+              <Tooltip formatter={(value) => currency(Number(value))} labelFormatter={(label) => `Year ${label}`} />
+              {cashFlowStrategy === "paydown" && model.payoffYear !== null ? <ReferenceLine x={model.payoffYear} stroke="#18181b" strokeDasharray="2 4" ifOverflow="extendDomain" /> : null}
+              <Line type="monotone" dataKey="InvestorValue" name="Rental Investment Value" stroke="#2563eb" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="DownPaymentInvestment" name="Alt Investment Value" stroke="#16a34a" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="PropertyValue" name="Property Value" stroke="#a855f7" strokeWidth={2} strokeDasharray="2 4" dot={false} />
+              {showSecondaryLines && includeCoveredLossesInAlt ? <Line type="monotone" dataKey="CoveredLossInvestment" name="Covered Losses Invested" stroke="#06b6d4" strokeWidth={2} dot={false} /> : null}
+              {showSecondaryLines ? <Line type="monotone" dataKey="EquityAfterSale" name="Equity after sale" stroke="#a1a1aa" strokeWidth={2} dot={false} /> : null}
+              {showSecondaryLines ? <Line type="monotone" dataKey="StrategyCashFlowValue" name={model.strategyLabel} stroke="#ea580c" strokeWidth={2} dot={false} /> : null}
+              {cashFlowStrategy === "paydown" ? <Line type="monotone" dataKey="LoanPaidOffMarker" name="Loan paid off" stroke="transparent" strokeWidth={0} dot={<LoanPaidOffDot />} activeDot={<LoanPaidOffDot />} legendType="none" connectNulls={false} /> : null}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="mt-2 flex shrink-0 flex-col items-center gap-2">
+          <ChartLegend items={legendItems} />
+          <Button type="button" variant="outline" className="h-8 rounded-xl px-3 text-xs font-medium text-zinc-700 shadow-sm" onClick={() => setShowSecondaryLines(!showSecondaryLines)}>
+            {showSecondaryLines ? "Hide chart details" : "Show equity + cash flow details"}
+          </Button>
+        </div>
+        {cashFlowStrategy === "paydown" ? (
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-600">
+            <div className="flex items-center gap-2"><span className="inline-block h-3 w-3 rotate-45 bg-zinc-900" /><span>Loan paid off on pay off contribution line</span></div>
+            <div className="flex items-center gap-2"><span className="inline-block h-5 border-l border-dotted border-zinc-900" /><span>Payoff year</span></div>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function RentalPropertyCalculatorPreview() {
+  const [purchasePrice, setPurchasePrice] = useState(DEFAULTS.purchasePrice);
+  const [downPaymentPct, setDownPaymentPct] = useState(DEFAULTS.downPaymentPct);
+  const [mortgageRate, setMortgageRate] = useState(DEFAULTS.mortgageRate);
+  const [mortgageYears, setMortgageYears] = useState(DEFAULTS.mortgageYears);
+  const [closingCostPct, setClosingCostPct] = useState(DEFAULTS.closingCostPct);
+  const [monthlyRent, setMonthlyRent] = useState(DEFAULTS.monthlyRent);
+  const [rentGrowth, setRentGrowth] = useState(DEFAULTS.rentGrowth);
+  const [vacancyPct, setVacancyPct] = useState(DEFAULTS.vacancyPct);
+  const [propertyAppreciation, setPropertyAppreciation] = useState(DEFAULTS.propertyAppreciation);
+  const [propertyTaxPct, setPropertyTaxPct] = useState(DEFAULTS.propertyTaxPct);
+  const [insuranceAnnual, setInsuranceAnnual] = useState(DEFAULTS.insuranceAnnual);
+  const [maintenancePct, setMaintenancePct] = useState(DEFAULTS.maintenancePct);
+  const [managementPct, setManagementPct] = useState(DEFAULTS.managementPct);
+  const [capexMonthly, setCapexMonthly] = useState(DEFAULTS.capexMonthly);
+  const [otherMonthly, setOtherMonthly] = useState(DEFAULTS.otherMonthly);
+  const [expenseInflation, setExpenseInflation] = useState(DEFAULTS.expenseInflation);
+  const [sellingCostPct, setSellingCostPct] = useState(DEFAULTS.sellingCostPct);
+  const [taxRate, setTaxRate] = useState(DEFAULTS.taxRate);
+  const [depreciationYears, setDepreciationYears] = useState(DEFAULTS.depreciationYears);
+  const [landValuePct, setLandValuePct] = useState(DEFAULTS.landValuePct);
+  const [horizonYears, setHorizonYears] = useState(DEFAULTS.horizonYears);
+  const [alternateInvestmentReturn, setAlternateInvestmentReturn] = useState(DEFAULTS.alternateInvestmentReturn);
+  const [cashFlowStrategy, setCashFlowStrategy] = useState(DEFAULTS.cashFlowStrategy);
+  const [includeCoveredLossesInAlt, setIncludeCoveredLossesInAlt] = useState(DEFAULTS.includeCoveredLossesInAlt);
+
+  const modelInputs = {
+    purchasePrice, downPaymentPct, mortgageRate, mortgageYears, closingCostPct, monthlyRent, rentGrowth,
+    vacancyPct, propertyAppreciation, propertyTaxPct, insuranceAnnual, maintenancePct, managementPct,
+    capexMonthly, otherMonthly, expenseInflation, sellingCostPct, taxRate, depreciationYears, landValuePct,
+    horizonYears, alternateInvestmentReturn, cashFlowStrategy, includeCoveredLossesInAlt,
+  };
+
+  const model = useMemo(() => buildRentalModel(modelInputs), [
+    purchasePrice, downPaymentPct, mortgageRate, mortgageYears, closingCostPct, monthlyRent, rentGrowth,
+    vacancyPct, propertyAppreciation, propertyTaxPct, insuranceAnnual, maintenancePct, managementPct,
+    capexMonthly, otherMonthly, expenseInflation, sellingCostPct, taxRate, depreciationYears, landValuePct,
+    horizonYears, alternateInvestmentReturn, cashFlowStrategy, includeCoveredLossesInAlt,
+  ]);
+
+  const scenarioInputs = useMemo(() => modelInputs, [
+    purchasePrice, downPaymentPct, mortgageRate, mortgageYears, closingCostPct, monthlyRent, rentGrowth,
+    vacancyPct, propertyAppreciation, propertyTaxPct, insuranceAnnual, maintenancePct, managementPct,
+    capexMonthly, otherMonthly, expenseInflation, sellingCostPct, taxRate, depreciationYears, landValuePct,
+    horizonYears, alternateInvestmentReturn, cashFlowStrategy, includeCoveredLossesInAlt,
+  ]);
+
+  const resetAssumptions = () => {
+    setPurchasePrice(DEFAULTS.purchasePrice);
+    setDownPaymentPct(DEFAULTS.downPaymentPct);
+    setMortgageRate(DEFAULTS.mortgageRate);
+    setMortgageYears(DEFAULTS.mortgageYears);
+    setClosingCostPct(DEFAULTS.closingCostPct);
+    setMonthlyRent(DEFAULTS.monthlyRent);
+    setRentGrowth(DEFAULTS.rentGrowth);
+    setVacancyPct(DEFAULTS.vacancyPct);
+    setPropertyAppreciation(DEFAULTS.propertyAppreciation);
+    setPropertyTaxPct(DEFAULTS.propertyTaxPct);
+    setInsuranceAnnual(DEFAULTS.insuranceAnnual);
+    setMaintenancePct(DEFAULTS.maintenancePct);
+    setManagementPct(DEFAULTS.managementPct);
+    setCapexMonthly(DEFAULTS.capexMonthly);
+    setOtherMonthly(DEFAULTS.otherMonthly);
+    setExpenseInflation(DEFAULTS.expenseInflation);
+    setSellingCostPct(DEFAULTS.sellingCostPct);
+    setTaxRate(DEFAULTS.taxRate);
+    setDepreciationYears(DEFAULTS.depreciationYears);
+    setLandValuePct(DEFAULTS.landValuePct);
+    setHorizonYears(DEFAULTS.horizonYears);
+    setAlternateInvestmentReturn(DEFAULTS.alternateInvestmentReturn);
+    setCashFlowStrategy(DEFAULTS.cashFlowStrategy);
+    setIncludeCoveredLossesInAlt(DEFAULTS.includeCoveredLossesInAlt);
+  };
+
+  const makeRentalBreakEven = () => {
+    const breakEvenRent = calculateBreakEvenMonthlyRent(modelInputs);
+    setMonthlyRent(breakEvenRent);
+  };
+
+  const payoffText = model.payoffYear === null ? "After horizon" : `Year ${model.payoffYear}`;
+  const rentalProfitWins = model.totalProfit > model.alternateInvestmentGain;
+  const altInvestmentWins = model.alternateInvestmentGain > model.totalProfit;
+
+  return (
+    <div className="min-h-screen bg-zinc-50 text-zinc-950">
+      <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">Rental Property Model</div>
+            <h1 className="mt-2 text-[3rem] font-[600] leading-none tracking-tight">Rental Property Outcome Calculator</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600">Compare rental property purchase vs. market investment. Estimate how purchase price, financing, rents, expenses, appreciation, taxes, and sale assumptions affect long-term investor value.</p>
+          </div>
+          <Button type="button" variant="outline" className="h-9 rounded-xl border-zinc-300 px-3 text-xs font-medium text-zinc-700 shadow-sm hover:bg-zinc-50" onClick={resetAssumptions}>
+            <ResetIcon className="mr-1.5 h-3.5 w-3.5" /> Reset assumptions
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <Card style={rentalProfitWins ? { borderColor: "#2563eb", borderWidth: 3 } : undefined}>
+            <CardContent className="p-4">
+              <div className="text-xs font-bold uppercase tracking-wide text-zinc-900">{rentalProfitWins ? "Rental Property Profit Wins" : "Rental Property Profit"}</div>
+              <div className="mt-2 text-xl font-semibold tracking-tight">{currency(model.totalProfit, true)}</div>
+              <div className="mt-1 text-xs text-zinc-600">After initial cash invested · {percent(model.annualizedReturn)} annualized</div>
+            </CardContent>
+          </Card>
+          <Card style={altInvestmentWins ? { borderColor: "#16a34a", borderWidth: 3 } : undefined}>
+            <CardContent className="p-4">
+              <div className="text-xs font-bold uppercase tracking-wide text-zinc-900">{altInvestmentWins ? "Alt Investment Total Profit Wins" : "Alt Investment Total Profit"}</div>
+              <div className="mt-2 text-xl font-semibold tracking-tight">{currency(model.alternateInvestmentGain, true)}</div>
+              <div className="mt-1 text-xs text-zinc-600">Invested with average return of {percent(alternateInvestmentReturn)}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-3">
+          <Card className="h-full">
+            <CardContent className="space-y-5 p-5">
+              <h2 className="text-xl font-semibold">Main assumptions</h2>
+              <Slider label="Purchase price" value={purchasePrice} setValue={setPurchasePrice} min={100000} max={3000000} step={10000} prefix="$" />
+              <Slider label="Down payment" value={downPaymentPct} setValue={setDownPaymentPct} min={0} max={60} step={1} suffix="%" helper={`${currency(model.downPayment)} cash into property`} />
+              <Slider label="Mortgage rate" value={mortgageRate} setValue={setMortgageRate} min={2} max={12} step={0.05} suffix="%" helper={`Monthly mortgage = ${currency(model.mortgage)}`} />
+              <Slider label="Time horizon" value={horizonYears} setValue={setHorizonYears} min={1} max={40} step={1} suffix=" years" />
+              <Slider label="Monthly rent" value={monthlyRent} setValue={setMonthlyRent} min={0} max={30000} step={100} prefix="$" helper={"Break Even amount: " + currency(model.firstYearBreakEvenMonthlyRent)} />
+              <div className="space-y-2">
+                <div>
+                  <div className="text-sm font-medium text-zinc-900">Cash-flow strategy</div>
+                  <div className="text-xs text-zinc-500">Would you prefer to reinvest your positive cash flows from rent into the market or to pay off the loan?</div>
+                </div>
+                <StrategyToggle value={cashFlowStrategy} setValue={setCashFlowStrategy} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="lg:col-span-2">
+            <MainChart model={model} cashFlowStrategy={cashFlowStrategy} includeCoveredLossesInAlt={includeCoveredLossesInAlt} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+          <Card>
+            <CardContent className="space-y-5 p-5">
+              <h2 className="text-xl font-semibold">Investment options</h2>
+              <Slider label="Alt. investment yearly return" value={alternateInvestmentReturn} setValue={setAlternateInvestmentReturn} min={0} max={15} step={0.25} suffix="%" helper="Used for the down-payment alternative and reinvested rental surplus." />
+              <div className="space-y-2">
+                <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">Use 30-year total return</div>
+                <div className="grid grid-cols-3 gap-2">
+                  {MARKET_RETURN_PRESETS.map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      className={`flex min-h-[92px] flex-col rounded-xl border px-2 py-2 text-left text-xs shadow-sm transition hover:bg-zinc-50 ${Math.abs(alternateInvestmentReturn - preset.value) < 0.01 ? "border-zinc-900 bg-zinc-50" : "border-zinc-200 bg-white"}`}
+                      onClick={() => setAlternateInvestmentReturn(preset.value)}
+                    >
+                      <div className="min-h-[16px] font-semibold leading-4 text-zinc-900">{preset.label}</div>
+                      <div className="mt-1 tabular-nums leading-4 text-zinc-600">{percent(preset.value)}</div>
+                      <div className="mt-auto pt-1 text-[10px] leading-3 text-zinc-500">{preset.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button type="button" role="switch" aria-checked={includeCoveredLossesInAlt} className={`flex w-full items-center justify-between gap-4 rounded-xl border bg-white px-3 py-3 text-left shadow-sm transition hover:shadow-md ${includeCoveredLossesInAlt ? "border-[#06b6d4]" : "border-zinc-300"}`} onClick={() => setIncludeCoveredLossesInAlt(!includeCoveredLossesInAlt)}>
+                <span className="flex flex-col items-start">
+                  <span className="font-medium text-zinc-900">Invest covered losses in alt investment</span>
+                  <span className="mt-1 text-xs font-normal leading-5 text-zinc-500">When rental cash flow is negative, the property owner would need to cover that cost. We'll assume the alternate investment would invest that covered cost amount.</span>
+                </span>
+                <span className={`relative h-6 w-11 shrink-0 rounded-full transition ${includeCoveredLossesInAlt ? "bg-[#06b6d4]" : "bg-zinc-200"}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition ${includeCoveredLossesInAlt ? "left-5" : "left-0.5"}`} /></span>
+              </button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="space-y-5 p-5">
+              <h2 className="text-xl font-semibold">Growth rates</h2>
+              <Slider label="Property appreciation" value={propertyAppreciation} setValue={setPropertyAppreciation} min={-3} max={12} step={0.25} suffix="%" />
+              <Slider label="Rent growth" value={rentGrowth} setValue={setRentGrowth} min={0} max={10} step={0.25} suffix="%" />
+              <Slider label="Expense inflation" value={expenseInflation} setValue={setExpenseInflation} min={0} max={10} step={0.25} suffix="%" />
+              <Slider label="Vacancy" value={vacancyPct} setValue={setVacancyPct} min={0} max={25} step={0.5} suffix="%" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="space-y-5 p-5">
+              <h2 className="text-xl font-semibold">Rental expenses</h2>
+              <Slider label="Property tax" value={propertyTaxPct} setValue={setPropertyTaxPct} min={0} max={3} step={0.05} suffix="%" helper="Annual % of property value." />
+              <Slider label="Management" value={managementPct} setValue={setManagementPct} min={0} max={15} step={0.5} suffix="%" helper="% of effective rent." />
+              <Slider label="Maintenance" value={maintenancePct} setValue={setMaintenancePct} min={0} max={4} step={0.05} suffix="%" helper="Annual % of property value." />
+              <CollapsibleSection title="More expense inputs" description="Insurance, capex reserve, and other monthly expenses." defaultOpen={false}>
+                <Slider label="Insurance" value={insuranceAnnual} setValue={setInsuranceAnnual} min={0} max={12000} step={100} prefix="$" suffix="/yr" />
+                <Slider label="Capex reserve" value={capexMonthly} setValue={setCapexMonthly} min={0} max={3000} step={25} prefix="$" suffix="/mo" helper="Money set aside each month for large, unexpected repairs or replacements." />
+                <Slider label="Other expenses" value={otherMonthly} setValue={setOtherMonthly} min={0} max={3000} step={25} prefix="$" suffix="/mo" />
+              </CollapsibleSection>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="space-y-5 p-5">
+              <h2 className="text-xl font-semibold">Tax + sale assumptions</h2>
+              <Slider label="Selling cost" value={sellingCostPct} setValue={setSellingCostPct} min={0} max={10} step={0.25} suffix="%" helper="Applied to future property value." />
+              <CollapsibleSection title="Advanced tax assumptions" description="Simplified rental tax effect and depreciation assumptions." defaultOpen={false}>
+                <Slider label="Tax rate" value={taxRate} setValue={setTaxRate} min={0} max={50} step={1} suffix="%" />
+                <Slider label="Land value" value={landValuePct} setValue={setLandValuePct} min={0} max={60} step={1} suffix="%" helper="Land is excluded from depreciation." />
+                <Slider label="Depreciation period" value={depreciationYears} setValue={setDepreciationYears} min={15} max={39} step={0.5} suffix=" years" />
+              </CollapsibleSection>
+              <CollapsibleSection title="Loan + closing cost assumptions" description="Mortgage term and upfront transaction cost." defaultOpen={false}>
+                <Slider label="Loan term" value={mortgageYears} setValue={setMortgageYears} min={10} max={40} step={1} suffix=" years" />
+                <Slider label="Closing costs" value={closingCostPct} setValue={setClosingCostPct} min={0} max={8} step={0.25} suffix="%" />
+              </CollapsibleSection>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <Card>
+            <CardContent className="p-5 text-sm text-zinc-700">
+              <h2 className="text-xl font-semibold text-zinc-900">Today's financing math</h2>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <div>Loan amount</div><div className="text-right tabular-nums">{currency(model.loan)}</div>
+                <div>Monthly payment</div><div className="text-right tabular-nums">{currency(model.mortgage)}</div>
+                <div>Closing costs</div><div className="text-right tabular-nums">{currency(model.closingCosts)}</div>
+                <div>Loan paid off</div><div className="text-right tabular-nums">{payoffText}</div>
+                <div className="font-semibold">Initial cash</div><div className="text-right font-semibold tabular-nums">{currency(model.initialCash)}</div>
+              </div>
+              <div className="mt-4 border-t border-zinc-200 pt-3">
+                <div className="mb-2 font-medium text-zinc-900">Monthly profit / loss</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>Rent revenue</div><div className="text-right tabular-nums">{currency(monthlyRent)}</div>
+                  <div>Vacancy allowance</div><div className="text-right tabular-nums">-{currency(model.firstYearVacancyLossMonthly)}</div>
+                  <div>Effective rent</div><div className="text-right tabular-nums">{currency(model.firstYearEffectiveRentMonthly)}</div>
+                  <div>Operating expenses</div><div className="text-right tabular-nums">-{currency(model.firstYearOperatingExpensesMonthly)}</div>
+                  <div className="pl-3 text-zinc-500">Property tax</div><div className="text-right tabular-nums text-zinc-500">-{currency(model.firstYearPropertyTaxMonthly)}</div>
+                  <div className="pl-3 text-zinc-500">Insurance</div><div className="text-right tabular-nums text-zinc-500">-{currency(model.firstYearInsuranceMonthly)}</div>
+                  <div className="pl-3 text-zinc-500">Maintenance</div><div className="text-right tabular-nums text-zinc-500">-{currency(model.firstYearMaintenanceMonthly)}</div>
+                  <div className="pl-3 text-zinc-500">Management</div><div className="text-right tabular-nums text-zinc-500">-{currency(model.firstYearManagementMonthly)}</div>
+                  <div className="pl-3 text-zinc-500">Capex reserve</div><div className="text-right tabular-nums text-zinc-500">-{currency(model.firstYearCapexMonthly)}</div>
+                  <div className="pl-3 text-zinc-500">Other expenses</div><div className="text-right tabular-nums text-zinc-500">-{currency(model.firstYearOtherMonthly)}</div>
+                  <div>Mortgage payment</div><div className="text-right tabular-nums">-{currency(model.mortgage)}</div>
+                  <div className="font-semibold">Net monthly P/L</div><div className="text-right font-semibold tabular-nums">{currency(model.firstYearMonthlyProfitLossBeforeTax)}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-5">
+              <h2 className="text-xl font-semibold">Final-year breakdown</h2>
+              <div className="mt-4 space-y-4">
+                <div className="rounded-2xl bg-zinc-100 p-4 text-sm text-zinc-700">
+                  <div className="font-medium text-zinc-900">Sale value at year {horizonYears}</div>
+                  <div className="mt-2 space-y-2">
+                    <StatRow label="Property Value" value={currency(model.final.PropertyValue)} />
+                    <StatRow label="Remaining loan" value={currency(model.final.LoanBalance)} />
+                    <StatRow label="Loan paid off" value={payoffText} />
+                    <StatRow label="Selling costs" value={currency(model.final.PropertyValue * (sellingCostPct / 100))} />
+                    <StatRow label="Equity after sale" value={currency(model.final.EquityAfterSale)} strong />
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-zinc-100 p-4 text-sm text-zinc-700">
+                  <div className="font-medium text-zinc-900">Investor outcome</div>
+                  <div className="mt-2 space-y-2">
+                    <StatRow label="Initial cash invested" value={currency(model.initialCash)} />
+                    <StatRow label="Cumulative cash flow" value={currency(model.final.CumulativeCashFlow)} />
+                    <StatRow label={model.strategyLabel} value={currency(model.final.StrategyCashFlowValue)} />
+                    <StatRow label="Investor value" value={currency(model.final.InvestorValue)} />
+                    <StatRow label="Equity multiple" value={multiple(model.equityMultiple)} />
+                    <StatRow label="Alt investment value" value={currency(model.final.DownPaymentInvestment)} />
+                    {includeCoveredLossesInAlt ? <StatRow label="Covered losses invested" value={currency(model.final.CoveredLossInvestment)} /> : null}
+                    <StatRow label="Rental vs. investment" value={currency(model.rentalVsInvestmentDifference)} strong />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-5">
+              <h2 className="text-xl font-semibold">Cash flow over time</h2>
+              <div className="mt-4 h-[260px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={model.chart} margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="year" tickFormatter={(value) => `${value}y`} tick={{ fontSize: 14 }} />
+                    <YAxis tickFormatter={(value) => chartCurrency(value)} width={60} tick={{ fontSize: 14 }} />
+                    <Tooltip formatter={(value) => currency(Number(value))} labelFormatter={(label) => `Year ${label}`} />
+                    <Area type="monotone" dataKey="CumulativeCashFlow" name="Cumulative cash flow" stroke="#52525b" fill="#e4e4e7" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-4 space-y-2 text-sm text-zinc-700">
+                <StatRow label="First-year gross rent" value={currency(model.firstYearGrossRent)} />
+                <StatRow label="First-year effective rent" value={currency(model.firstYearEffectiveRent)} />
+                <StatRow label="First-year NOI" value={currency(model.chart[1]?.NOI || 0)} />
+                <StatRow label="Cap rate" value={percent(model.firstYearCapRate)} />
+                <StatRow label="Cash-on-cash" value={percent(model.firstYearCashOnCash)} />
+                <StatRow label="DSCR" value={multiple(model.dscr)} strong />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <AdvancedDecisionAnalysis inputs={scenarioInputs} />
+
+        <CollapsibleSection title="Model notes" description="Show assumptions and limitations of the simplified model." defaultOpen={false}>
+          <p className="text-sm leading-6 text-zinc-700">This is a simplified rental property model. It assumes annual rent and expense step-ups, fixed-rate amortizing debt, a sale at the selected horizon, and a simplified tax effect from taxable rental income or losses. In reinvest mode, positive annual after-tax rental cash flow is invested at the alternate yearly return and added to investor value. In pay-off mode, positive annual surplus is used as an extra principal contribution, reducing the remaining loan balance and increasing equity after sale. Negative annual cash flow still reduces investor value. It does not model refinance proceeds, transaction timing, passive loss limits, depreciation recapture, capital gains tax, or local tax details.</p>
+        </CollapsibleSection>
+      </div>
+    </div>
+  );
 }
